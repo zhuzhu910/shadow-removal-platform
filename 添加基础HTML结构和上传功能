@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能去阴影处理平台</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --dark-color: #1f2937;
+            --light-color: #f8fafc;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .upload-area {
+            border: 3px dashed #6366f1;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            min-height: 300px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover {
+            border-color: var(--success-color);
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-area.drag-over {
+            border-color: var(--success-color);
+            background: rgba(16, 185, 129, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            z-index: 2;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .preview-container {
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .image-info {
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--dark-color);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .btn-custom {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+            color: white;
+        }
+
+        .btn-danger-custom {
+            background: linear-gradient(45deg, var(--danger-color), #dc2626);
+            border: none;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger-custom:hover {
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .progress {
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .progress-bar {
+            background: linear-gradient(45deg, var(--success-color), #059669);
+            border-radius: 4px;
+        }
+
+        .file-info-badge {
+            background: rgba(99, 102, 241, 0.2);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin: 5px;
+            display: inline-block;
+        }
+
+        .loading-spinner {
+            display: none;
+            margin: 20px auto;
+        }
+
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: var(--primary-color);
+        }
+
+        .header-title {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .feature-icon {
+            color: var(--primary-color);
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="main-container p-4">
+                    <h1 class="header-title">
+                        <i class="fas fa-magic me-3"></i>
+                        智能去阴影处理平台
+                    </h1>
+                    
+                    <div class="row">
+                        <!-- 上传区域 -->
+                        <div class="col-lg-8">
+                            <div class="upload-area" id="uploadArea">
+                                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                    <h4>拖拽图片到此处或点击上传</h4>
+                                    <p class="mb-0">支持 JPG, PNG, WEBP 格式</p>
+                                    <small class="text-muted">最大文件大小: 10MB</small>
+                                </div>
+                            </div>
+
+                            <!-- 进度条 -->
+                            <div class="progress-container" id="progressContainer">
+                                <div class="progress">
+                                    <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <small class="text-white mt-2 d-block">正在上传...</small>
+                            </div>
+
+                            <!-- 图片预览区域 -->
+                            <div class="preview-container" id="previewContainer">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5 class="text-white mb-3">
+                                            <i class="fas fa-image me-2"></i>原始图片
+                                        </h5>
+                                        <img id="originalImage" class="preview-image" alt="原始图片">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5 class="text-white mb-3">
+                                            <i class="fas fa-wand-magic-sparkles me-2"></i>处理结果
+                                        </h5>
+                                        <div class="text-center" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                                            <p class="text-white-50">
+                                                <i class="fas fa-arrow-left me-2"></i>
+                                                请选择处理方式
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 图片信息 -->
+                                <div class="image-info" id="imageInfo">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <span class="file-info-badge">
+                                                <i class="fas fa-file-image me-1"></i>
+                                                <span id="fileName">-</span>
+                                            </span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <span class="file-info-badge">
+                                                <i class="fas fa-expand-arrows-alt me-1"></i>
+                                                <span id="imageDimensions">-</span>
+                                            </span>
+                                            <span class="file-info-badge">
+                                                <i class="fas fa-weight-hanging me-1"></i>
+                                                <span id="fileSize">-</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 操作按钮 -->
+                                <div class="text-center mt-3">
+                                    <button class="btn btn-danger-custom me-3" id="clearBtn">
+                                        <i class="fas fa-trash me-2"></i>清除图片
+                                    </button>
+                                    <button class="btn btn-custom" id="newImageBtn">
+                                        <i class="fas fa-plus me-2"></i>上传新图片
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 功能面板 -->
+                        <div class="col-lg-4">
+                            <div class="control-panel">
+                                <h5 class="text-white mb-4">
+                                    <i class="fas fa-sliders-h me-2"></i>处理选项
+                                </h5>
+                                
+                                <div class="feature-card">
+                                    <div class="text-center">
+                                        <i class="fas fa-sun feature-icon"></i>
+                                        <h6 class="text-white">智能去阴影</h6>
+                                        <p class="text-white-50 small">基于AI算法自动检测并移除阴影</p>
+                                        <button class="btn btn-custom btn-sm" disabled>
+                                            <i class="fas fa-play me-1"></i>开始处理
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="feature-card">
+                                    <div class="text-center">
+                                        <i class="fas fa-adjust feature-icon"></i>
+                                        <h6 class="text-white">对比度增强</h6>
+                                        <p class="text-white-50 small">提升图片整体对比度和亮度</p>
+                                        <button class="btn btn-custom btn-sm" disabled>
+                                            <i class="fas fa-play me-1"></i>开始处理
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="feature-card">
+                                    <div class="text-center">
+                                        <i class="fas fa-palette feature-icon"></i>
+                                        <h6 class="text-white">颜色校正</h6>
+                                        <p class="text-white-50 small">自动校正阴影造成的色彩偏差</p>
+                                        <button class="btn btn-custom btn-sm" disabled>
+                                            <i class="fas fa-play me-1"></i>开始处理
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4" style="border-color: rgba(255,255,255,0.3);">
+
+                                <div class="text-center">
+                                    <h6 class="text-white mb-3">
+                                        <i class="fas fa-info-circle me-2"></i>使用说明
+                                    </h6>
+                                    <ul class="list-unstyled text-white-50 small text-start">
+                                        <li><i class="fas fa-check me-2 text-success"></i>支持 JPG、PNG、WEBP 格式</li>
+                                        <li><i class="fas fa-check me-2 text-success"></i>文件大小不超过 10MB</li>
+                                        <li><i class="fas fa-check me-2 text-success"></i>拖拽或点击上传图片</li>
+                                        <li><i class="fas fa-check me-2 text-success"></i>选择合适的处理方式</li>
+                                        <li><i class="fas fa-check me-2 text-success"></i>下载处理后的图片</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        class ShadowRemovalPlatform {
+            constructor() {
+                this.initializeElements();
+                this.bindEvents();
+                this.currentFile = null;
+            }
+
+            initializeElements() {
+                this.uploadArea = document.getElementById('uploadArea');
+                this.fileInput = document.getElementById('fileInput');
+                this.previewContainer = document.getElementById('previewContainer');
+                this.originalImage = document.getElementById('originalImage');
+                this.progressContainer = document.getElementById('progressContainer');
+                this.progressBar = document.getElementById('progressBar');
+                this.clearBtn = document.getElementById('clearBtn');
+                this.newImageBtn = document.getElementById('newImageBtn');
+                this.imageInfo = document.getElementById('imageInfo');
+                this.fileName = document.getElementById('fileName');
+                this.imageDimensions = document.getElementById('imageDimensions');
+                this.fileSize = document.getElementById('fileSize');
+            }
+
+            bindEvents() {
+                // 上传区域事件
+                this.uploadArea.addEventListener('click', () => this.fileInput.click());
+                this.uploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
+                this.uploadArea.addEventListener('dragleave', (e) => this.handleDragLeave(e));
+                this.uploadArea.addEventListener('drop', (e) => this.handleDrop(e));
+
+                // 文件输入事件
+                this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+
+                // 按钮事件
+                this.clearBtn.addEventListener('click', () => this.clearImage());
+                this.newImageBtn.addEventListener('click', () => this.fileInput.click());
+
+                // 处理按钮事件（当前为演示）
+                document.querySelectorAll('.feature-card .btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (!btn.disabled) {
+                            this.showProcessingDemo(e.target);
+                        }
+                    });
+                });
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                this.uploadArea.classList.add('drag-over');
+            }
+
+            handleDragLeave(e) {
+                e.preventDefault();
+                this.uploadArea.classList.remove('drag-over');
+            }
+
+            handleDrop(e) {
+                e.preventDefault();
+                this.uploadArea.classList.remove('drag-over');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    this.processFile(files[0]);
+                }
+            }
+
+            handleFileSelect(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    this.processFile(file);
+                }
+            }
+
+            processFile(file) {
+                // 验证文件类型
+                if (!this.isValidImageFile(file)) {
+                    this.showError('请选择有效的图片文件 (JPG, PNG, WEBP)');
+                    return;
+                }
+
+                // 验证文件大小
+                if (file.size > 10 * 1024 * 1024) {
+                    this.showError('文件大小不能超过 10MB');
+                    return;
+                }
+
+                this.currentFile = file;
+                this.showProgress();
+                this.loadImage(file);
+            }
+
+            isValidImageFile(file) {
+                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                return validTypes.includes(file.type);
+            }
+
+            showProgress() {
+                this.progressContainer.style.display = 'block';
+                
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 30;
+                    if (progress >= 100) {
+                        progress = 100;
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            this.progressContainer.style.display = 'none';
+                        }, 500);
+                    }
+                    this.progressBar.style.width = progress + '%';
+                }, 200);
+            }
+
+            loadImage(file) {
+                const reader = new FileReader();
+                
+                reader.onload = (e) => {
+                    this.originalImage.src = e.target.result;
+                    this.originalImage.onload = () => {
+                        this.showPreview();
+                        this.updateImageInfo(file);
+                        this.enableProcessingButtons();
+                    };
+                };
+                
+                reader.readAsDataURL(file);
+            }
+
+            showPreview() {
+                this.uploadArea.style.display = 'none';
+                this.previewContainer.style.display = 'block';
+            }
+
+            updateImageInfo(file) {
+                this.fileName.textContent = file.name;
+                this.fileSize.textContent = this.formatFileSize(file.size);
+                
+                // 获取图片尺寸
+                const img = new Image();
+                img.onload = () => {
+                    this.imageDimensions.textContent = `${img.width} × ${img.height}`;
+                };
+                img.src = this.originalImage.src;
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            enableProcessingButtons() {
+                document.querySelectorAll('.feature-card .btn').forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('btn-secondary');
+                    btn.classList.add('btn-custom');
+                });
+            }
+
+            clearImage() {
+                this.currentFile = null;
+                this.uploadArea.style.display = 'block';
+                this.previewContainer.style.display = 'none';
+                this.progressContainer.style.display = 'none';
+                this.fileInput.value = '';
+                
+                // 禁用处理按钮
+                document.querySelectorAll('.feature-card .btn').forEach(btn => {
+                    btn.disabled = true;
+                    btn.classList.remove('btn-custom');
+                    btn.classList.add('btn-secondary');
+                });
+            }
+
+            showProcessingDemo(button) {
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>处理中...';
+                button.disabled = true;
+
+                setTimeout(() => {
+                    button.innerHTML = '<i class="fas fa-check me-1"></i>完成';
+                    button.classList.remove('btn-custom');
+                    button.classList.add('btn-success');
+                    
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                        button.classList.remove('btn-success');
+                        button.classList.add('btn-custom');
+                    }, 2000);
+                }, 3000);
+            }
+
+            showError(message) {
+                // 创建错误提示
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+                alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+                alert.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i>${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                document.body.appendChild(alert);
+                
+                // 自动消失
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 5000);
+            }
+        }
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            new ShadowRemovalPlatform();
+        });
+    </script>
+</body>
+</html>
